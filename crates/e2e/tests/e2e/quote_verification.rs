@@ -528,7 +528,6 @@ async fn usdt_quote_verification(web3: Web3) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethrpc::block_stream::BlockInfo;
     use shared::url::Url;
 
     #[tokio::test]
@@ -537,10 +536,9 @@ mod tests {
         let url = Url::parse("https://ovh.nodes.cow.fi/mainnet/").unwrap();
         let web3 = buffered_web3_client(&url);
         let block_stream =
-            ethrpc::block_stream::mock_single_block(BlockInfo {
-                number: 1000000_u64,
-                ..Default::default()
-            });
+            ethrpc::block_stream::current_block_stream(url, std::time::Duration::from_millis(1_000))
+                .await
+                .unwrap();
 
         let settlement_contract = H160::from_str("0x9008d19f58aabd9ed0d60971565aa8510560ab41").unwrap();
         let weth = H160::from_str("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap();
@@ -589,7 +587,7 @@ mod tests {
                                 data: hex::decode("aa77476c000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000002260fac5e5542a773aa44fbcfedf7c193bc2c599000000000000000000000000000000000000000000000000e357b42c3a9d8ccf0000000000000000000000000000000000000000000000000000000004d0e79e000000000000000000000000a69babef1ca67a37ffaf7a485dfff3382056e78c0000000000000000000000009008d19f58aabd9ed0d60971565aa8510560ab41000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000066360af101ffffffffffffffffffffffffffffffffffffff0f3f47f166360a8d0000003f0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000001c66b3383f287dd9c85ad90e7c5a576ea4ba1bdf5a001d794a9afa379e6b2517b47e487a1aef32e75af432cbdbd301ada42754eaeac21ec4ca744afd92732f47540000000000000000000000000000000000000000000000000000000004d0c80f").unwrap(),
                                 value: 0.into(),
                             }],
-                            solver: H160::from_str("0xe3067c7c27c1038de4e8ad95a83b927d23dfbd99")
+                            solver: H160::from_str("0xA883710b6DBf008a1CC25722C54583E35884a209")
                                 .unwrap(),
                             tx_origin,
                         }),
@@ -601,7 +599,7 @@ mod tests {
         let verified_quote = Estimate {
             out_amount: 16380122291179526144u128.into(),
             gas: 225000,
-            solver: H160::from_str("0xe3067c7c27c1038de4e8ad95a83b927d23dfbd99").unwrap(),
+            solver: H160::from_str("0xA883710b6DBf008a1CC25722C54583E35884a209").unwrap(),
             verified: true,
             execution: QuoteExecution {
                 interactions: vec![InteractionData {
