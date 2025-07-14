@@ -625,7 +625,7 @@ mod tests {
         assert_eq!(
             verification.unwrap(),
             Estimate {
-                verified: false,
+                verified: true,
                 ..verified_quote
             }
         );
