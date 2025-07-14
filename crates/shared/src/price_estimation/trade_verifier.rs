@@ -181,6 +181,8 @@ impl TradeVerifier {
             ..Default::default()
         };
 
+        tracing::warn!(call = ?call, overrides = ?overrides);
+
         let output = self
             .simulator
             .simulate(call, overrides, Some(block.number))
