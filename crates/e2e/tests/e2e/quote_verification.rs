@@ -524,3 +524,133 @@ async fn usdt_quote_verification(web3: Web3) {
         .unwrap();
     assert!(quote.verified);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ethrpc::block_stream::BlockInfo;
+    use shared::url::Url;
+
+    #[tokio::test]
+    async fn test_verify_trade() {
+        let url = Url::parse("https://ovh.nodes.cow.fi/mainnet/").unwrap();
+        let web3 = buffered_web3_client(&url);
+        let block_stream =
+            ethrpc::block_stream::mock_single_block(BlockInfo {
+                number: 1000000_u64,
+                ..Default::default()
+            });
+
+        let settlement_contract = H160::from_str("0x9008d19f58aabd9ed0d60971565aa8510560ab41").unwrap();
+        let weth = H160::from_str("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap();
+
+        let verifier = TradeVerifier::new(
+            web3.clone(),
+            Arc::new(web3.clone()),
+            Arc::new(web3.clone()),
+            Arc::new(BalanceOverrides::default()),
+            block_stream,
+            settlement_contract,
+            weth,
+            BigDecimal::zero(),
+        )
+        .await
+        .unwrap();
+
+        let verify_trade = |tx_origin| {
+            let verifier = verifier.clone();
+            async move {
+                verifier
+                    .verify(
+                        &PriceQuery {
+                            sell_token: H160::from_str("0x2260fac5e5542a773aa44fbcfedf7c193bc2c599")
+                                .unwrap(),
+                            buy_token: H160::from_str("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
+                                .unwrap(),
+                            kind: OrderKind::Sell,
+                            in_amount: NonZeroU256::new(12.into()).unwrap(),
+                        },
+                        &Verification {
+                            from: H160::from_str("0x73688c2b34bf6c09c125fed02fe92d17a94b897a").unwrap(),
+                            receiver: H160::from_str("0x73688c2b34bf6c09c125fed02fe92d17a94b897a")
+                                .unwrap(),
+                            pre_interactions: vec![],
+                            post_interactions: vec![],
+                            sell_token_source: SellTokenSource::Erc20,
+                            buy_token_destination: BuyTokenDestination::Erc20,
+                        },
+                        TradeKind::Legacy(LegacyTrade {
+                            out_amount: 16380122291179526144u128.into(),
+                            gas_estimate: Some(225000),
+                            interactions: vec![Interaction {
+                                target: H160::from_str("0xdef1c0ded9bec7f1a1670819833240f027b25eff")
+                                    .unwrap(),
+                                data: hex::decode("aa77476c000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000002260fac5e5542a773aa44fbcfedf7c193bc2c599000000000000000000000000000000000000000000000000e357b42c3a9d8ccf0000000000000000000000000000000000000000000000000000000004d0e79e000000000000000000000000a69babef1ca67a37ffaf7a485dfff3382056e78c0000000000000000000000009008d19f58aabd9ed0d60971565aa8510560ab41000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000066360af101ffffffffffffffffffffffffffffffffffffff0f3f47f166360a8d0000003f0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000001c66b3383f287dd9c85ad90e7c5a576ea4ba1bdf5a001d794a9afa379e6b2517b47e487a1aef32e75af432cbdbd301ada42754eaeac21ec4ca744afd92732f47540000000000000000000000000000000000000000000000000000000004d0c80f").unwrap(),
+                                value: 0.into(),
+                            }],
+                            solver: H160::from_str("0xe3067c7c27c1038de4e8ad95a83b927d23dfbd99")
+                                .unwrap(),
+                            tx_origin,
+                        }),
+                    )
+                    .await
+            }
+        };
+
+        let verified_quote = Estimate {
+            out_amount: 16380122291179526144u128.into(),
+            gas: 225000,
+            solver: H160::from_str("0xe3067c7c27c1038de4e8ad95a83b927d23dfbd99").unwrap(),
+            verified: true,
+            execution: QuoteExecution {
+                interactions: vec![InteractionData {
+                    target: H160::from_str("0xdef1c0ded9bec7f1a1670819833240f027b25eff").unwrap(), 
+                    value: 0.into(),
+                    call_data: hex::decode("aa77476c000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000002260fac5e5542a773aa44fbcfedf7c193bc2c599000000000000000000000000000000000000000000000000e357b42c3a9d8ccf0000000000000000000000000000000000000000000000000000000004d0e79e000000000000000000000000a69babef1ca67a37ffaf7a485dfff3382056e78c0000000000000000000000009008d19f58aabd9ed0d60971565aa8510560ab41000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000066360af101ffffffffffffffffffffffffffffffffffffff0f3f47f166360a8d0000003f0000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000001c66b3383f287dd9c85ad90e7c5a576ea4ba1bdf5a001d794a9afa379e6b2517b47e487a1aef32e75af432cbdbd301ada42754eaeac21ec4ca744afd92732f47540000000000000000000000000000000000000000000000000000000004d0c80f").unwrap() 
+                }],
+                pre_interactions: vec![],
+                jit_orders: vec![],
+            },
+        };
+
+        // `tx_origin: 0x0000` is currently used to bypass quote verification due to an
+        // implementation detail of zeroex RFQ orders.
+        // TODO: remove with #2693
+        let verification = verify_trade(Some(H160::from([0x1; 20]))).await;
+        assert_eq!(&verification.unwrap(), &verified_quote);
+
+        // Trades using any other `tx_origin` can not bypass the verification.
+        let verification = verify_trade(None).await;
+        assert_eq!(
+            verification.unwrap(),
+            Estimate {
+                verified: false,
+                ..verified_quote
+            }
+        );
+    }
+
+    /// Builds a web3 client that buffers requests and sends them in a
+    /// batch call.
+    pub fn buffered_web3_client(ethrpc: &Url) -> Web3 {
+        web3_client(ethrpc, 20, 10)
+    }
+
+    /// Builds a web3 client that sends requests one by one.
+    pub fn unbuffered_web3_client(ethrpc: &Url) -> Web3 {
+        web3_client(ethrpc, 0, 0)
+    }
+
+    fn web3_client(ethrpc: &Url, max_batch_size: usize, max_concurrent_requests: usize) -> Web3 {
+        let ethrpc_args = shared::ethrpc::Arguments {
+            ethrpc_max_batch_size: max_batch_size,
+            ethrpc_max_concurrent_requests: max_concurrent_requests,
+            ethrpc_batch_delay: Default::default(),
+        };
+        let http_factory =
+            shared::http_client::HttpClientFactory::new(&shared::http_client::Arguments {
+                http_timeout: std::time::Duration::from_secs(10),
+            });
+        shared::ethrpc::web3(&ethrpc_args, &http_factory, ethrpc, "base")
+    }
+}
