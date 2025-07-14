@@ -1,4 +1,4 @@
-use {anyhow::Result, url::Url};
+pub use {anyhow::Result, url::Url};
 
 /// Join a path with a URL, ensuring that there is only one slash between them.
 /// It doesn't matter if the URL ends with a slash or the path starts with one.
