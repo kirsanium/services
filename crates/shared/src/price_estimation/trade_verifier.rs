@@ -187,6 +187,8 @@ impl TradeVerifier {
             .await
             .context("failed to simulate quote");
 
+        tracing::warn!("output: {:?}", output);
+
         // TODO remove when quoters stop signing zeroex RFQ orders for `tx.origin:
         // 0x0000` (#2693)
         if let Err(err) = &output {
