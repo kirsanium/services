@@ -37,12 +37,12 @@ sqlx = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["macros", "process"] }
 tracing = { workspace = true }
-tracing-test = "0.2.5"
 warp = { workspace = true }
 web3 = { workspace = true, features = ["http"] }
 
 [dev-dependencies]
 refunder = { workspace = true }
+tracing-test = { version = "0.2.5", features = ["no-env-filter"] }
 
 [lints]
 workspace = true
