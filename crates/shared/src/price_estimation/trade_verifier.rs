@@ -185,8 +185,7 @@ impl TradeVerifier {
             .simulator
             .simulate(call, overrides, Some(block.number))
             .await
-            .context("failed to simulate quote")
-            .map_err(Error::SimulationFailed);
+            .context("failed to simulate quote");
 
         // TODO remove when quoters stop signing zeroex RFQ orders for `tx.origin:
         // 0x0000` (#2693)
@@ -217,7 +216,20 @@ impl TradeVerifier {
                 );
                 return Ok(estimate);
             }
-        };
+        } else {
+            let estimate = Estimate {
+                out_amount: *out_amount,
+                gas: trade.gas_estimate().context("no gas estimate")?,
+                solver: trade.solver(),
+                verified: true,
+                execution: QuoteExecution {
+                    interactions: map_interactions_data(&trade.interactions()),
+                    pre_interactions: map_interactions_data(&trade.pre_interactions()),
+                    jit_orders: trade.jit_orders(),
+                },
+            };
+            return Ok(estimate);
+        }
 
         let mut summary = SettleOutput::decode(&output?, query.kind, &tokens)
             .context("could not decode simulation output")
