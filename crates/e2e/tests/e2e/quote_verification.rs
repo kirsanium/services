@@ -617,7 +617,7 @@ mod tests {
         // `tx_origin: 0x0000` is currently used to bypass quote verification due to an
         // implementation detail of zeroex RFQ orders.
         // TODO: remove with #2693
-        let verification = verify_trade(Some(H160::from([0x1; 20]))).await;
+        let verification = verify_trade(Some(H160::zero())).await;
         assert_eq!(&verification.unwrap(), &verified_quote);
 
         // Trades using any other `tx_origin` can not bypass the verification.
