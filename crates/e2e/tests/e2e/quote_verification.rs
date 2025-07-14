@@ -617,6 +617,7 @@ mod tests {
         // implementation detail of zeroex RFQ orders.
         // TODO: remove with #2693
         let verification = verify_trade(Some(H160::from([0x1; 20]))).await;
+        println!("verification: {:?}", verification);
         assert_eq!(&verification.unwrap(), &verified_quote);
 
         // Trades using any other `tx_origin` can not bypass the verification.
